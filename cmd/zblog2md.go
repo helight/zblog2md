@@ -28,7 +28,7 @@ import (
 type options struct {
 	DBname string
 	OutPutDir string
-	PageSize int
+	PageSize uint
 }
 
 // var posts []Post // := make([]Post, 0)
@@ -48,16 +48,16 @@ func zblog2mdCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Fprintf(cmd.OutOrStdout(), "OK")
 			fmt.Println("Echo: " + strings.Join(args, " "))
-			fmt.Println("DBname: " + optionitem.DBname + " OutPutDir: " + optionitem.OutPutDir + " PageSize: " + optionitem.PageSize)
+			fmt.Println("DBname: " + optionitem.DBname + " OutPutDir: " + optionitem.OutPutDir + " PageSize: " + string(optionitem.PageSize))
 
-			total, rows, err:= model.ZbpPostPagedQuery("log_ID > 0", 1, uint(1))
+			total, _, err:= model.ZbpPostPagedQuery("log_ID > 0", 1, uint(1))
 			if err != nil {
 				fmt.Printf("err: %s", err.Error())
 			} else {
 				fmt.Printf("total: %d", total)
-				page : = 0
-				for ( (page * optionitem.PageSize) < total) {
-					readAndWritePosts(optionitem.PageSize, page)
+				page := uint(0)
+				for ( (uint(page) * optionitem.PageSize) < total) {
+					readAndWritePosts(optionitem.PageSize, page, optionitem.OutPutDir)
 					page = page + 1
 				} 
 			}
@@ -73,14 +73,14 @@ func zblog2mdCmd() *cobra.Command {
 	return z2md
 }
 
-func readAndWritePosts(pagesize, page int) error {
-	total, rows, err:= model.ZbpPostPagedQuery("log_ID > 0", pagesize, uint(page))
+func readAndWritePosts(pagesize, page uint, outputdir string) error {
+	_, rows, err:= model.ZbpPostPagedQuery("log_ID > 0", pagesize, uint(page))
 	if err != nil {
 		fmt.Printf("err: %s", err.Error())
 		return err
 	} 
 	// default output dir, default to ./output/
-	dealPosts(rows, optionitem.OutPutDir)
+	dealPosts(rows, outputdir)
 
 	return nil
 }
