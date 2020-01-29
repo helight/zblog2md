@@ -16,9 +16,7 @@ package cmd
 
 import (
 	"fmt"
-//	"log"
 	"strings"
-// 	"time"
 
 	"github.com/spf13/cobra"
 
@@ -30,6 +28,7 @@ import (
 type options struct {
 	DBname string
 	OutPutDir string
+	PageSize int
 }
 
 // var posts []Post // := make([]Post, 0)
@@ -47,20 +46,20 @@ func zblog2mdCmd() *cobra.Command {
 			fmt.Printf("Inside rootCmd PreRun with args: %v\n", args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			total, rows, err:= model.ZbpPostPagedQuery("log_ID > 0", 20, uint(4))
+			fmt.Fprintf(cmd.OutOrStdout(), "OK")
+			fmt.Println("Echo: " + strings.Join(args, " "))
+			fmt.Println("DBname: " + optionitem.DBname + " OutPutDir: " + optionitem.OutPutDir + " PageSize: " + optionitem.PageSize)
+
+			total, rows, err:= model.ZbpPostPagedQuery("log_ID > 0", 1, uint(1))
 			if err != nil {
 				fmt.Printf("err: %s", err.Error())
 			} else {
 				fmt.Printf("total: %d", total)
-				// fmt.Printf("data: %v", rows)
-
-				// default output dir, default to ./output/
-				dealPosts(rows, optionitem.OutPutDir)
-	
-				fmt.Fprintf(cmd.OutOrStdout(), "OK")
-				fmt.Println("Echo: " + strings.Join(args, " "))
-				fmt.Println("Echo: " + optionitem.DBname)
-				fmt.Println("Echo: " + optionitem.OutPutDir)
+				page : = 0
+				for ( (page * optionitem.PageSize) < total) {
+					readAndWritePosts(optionitem.PageSize, page)
+					page = page + 1
+				} 
 			}
 			return nil
 		},
@@ -69,8 +68,21 @@ func zblog2mdCmd() *cobra.Command {
 		"the DBname to read posts.")
 	z2md.PersistentFlags().StringVar(&optionitem.OutPutDir, "output", "./output/",
 		"the dir to write posts to.")
+	z2md.PersistentFlags().UintVar(&optionitem.PageSize, "pagesize", 20, "pagesize read from db one time.")
 
 	return z2md
+}
+
+func readAndWritePosts(pagesize, page int) error {
+	total, rows, err:= model.ZbpPostPagedQuery("log_ID > 0", pagesize, uint(page))
+	if err != nil {
+		fmt.Printf("err: %s", err.Error())
+		return err
+	} 
+	// default output dir, default to ./output/
+	dealPosts(rows, optionitem.OutPutDir)
+
+	return nil
 }
 
 func dealPosts(posts []*model.ZbpPost, outputdir string)  {
