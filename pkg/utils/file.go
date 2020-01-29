@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"time"
 	"strings"
+	"text/template"
+	"os"
 
 	"zblog2md/pkg/model"
 )
@@ -36,10 +38,67 @@ summary = ""
 keywords = ["life"]
 +++
 */
+
+type hugoPostTpl struct {
+	LogTitle 		string
+	LogDate   		string
+	LogTags    		string
+	LogCategories   string
+	LogSummary    	string
+	LogKeywords    	string
+	LogContent    	string
+ }
+
+// CheckErr check
+ func CheckErr(err error) {
+	if err != nil {
+	   panic(err)
+	}
+ }
+
 // Write2md post to file
 func Write2md(post *model.ZbpPost, tags []string, category string)  {
 	posttime := time.Unix(int64(post.LogPostTime), 0)
 	fmt.Printf("LogPostTime: %d \r\n", posttime.Year())
+}
+
+// Write2hugomd post to hugo markdown file
+func Write2hugomd(post *model.ZbpPost, tags []string, category string, outputdir string)  { 
+	// file data
+	postData := hugoPostTpl{"wool", "wool", "wool", "wool", "wool", "wool", "wool"}
+
+	posttime := time.Unix(int64(post.LogPostTime), 0)
+	fmt.Printf("LogPostTime: %d \r\n", posttime.Year())
+
+	postData.LogTitle = post.LogTitle
+	postData.LogDate = fmt.Sprintf("\"%s\"", posttime.Format(time.RFC3339))
+	postData.LogCategories = fmt.Sprintf("[\"%s\"]", category)
+	postData.LogSummary = ""
+	postData.LogContent = post.LogContent
+	logtags := "["
+	i := len(tags)
+	for i > 0 {
+		i = i - 1
+		logtags = logtags + "\"" + tags[i] + "\""
+		if (i > 1) {
+			logtags = logtags + ","
+		}
+	}
+	logtags = logtags + "]"
+	postData.LogTags = logtags
+	postData.LogKeywords = logtags
+
+	// create output dir ./output/2009/
+	filepath := fmt.Sprintf("%s/%d/", outputdir, posttime.Year())
+	CreateDir(filepath)
+	filename := fmt.Sprintf("%s/%d.md", filepath, post.LogID)
+
+	// fill the template and write to file
+	tmpl, err := template.ParseFiles("data/hugo-md.tpl")
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0755)
+	CheckErr(err)
+	err = tmpl.Execute(file, postData)
+	CheckErr(err)
 }
 
 // Tags2ID {46}{72}{91}{108}{110}
@@ -60,4 +119,24 @@ func Tags2ID(tags string) ([]string, error) {
 		}
 	}
 	return results, nil
+}
+
+// CreateDir CreateDir
+func CreateDir(dirpath string) {
+	if _, err := os.Stat(dirpath); os.IsNotExist(err) {
+		os.MkdirAll(dirpath, os.ModePerm) //os.ModePerm
+		os.Chmod(dirpath, 0755)
+	}
+}
+
+// PathExists check
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }

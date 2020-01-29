@@ -29,6 +29,7 @@ import (
 
 type options struct {
 	DBname string
+	OutPutDir string
 }
 
 // var posts []Post // := make([]Post, 0)
@@ -51,42 +52,51 @@ func zblog2mdCmd() *cobra.Command {
 				fmt.Printf("err: %s", err.Error())
 			} else {
 				fmt.Printf("total: %d", total)
-				fmt.Printf("data: %v", rows)
-				i := 20
-				for i > 0 {
-					i = i - 1
-					fmt.Printf("LogCateID: %d ", rows[i].LogCateID)
-					category := "life"
-					cate, _ := model.GetZbpCategory("cate_ID = ?", rows[i].LogCateID)
-					if (cate != nil) {
-						category = cate.CateName
-					}
-					var tags []string
-					// {46}{72}{91}{108}{110}
-					retags, _ := utils.Tags2ID(rows[i].LogTag)
-					fmt.Printf("logtags1: %v ", retags)
-					v := len(retags)
-					for v > 0 {
-						v = v - 1
-						tag, _ := model.GetZbpTag("tag_ID = ?", retags[v])
-						if (tag != nil) {
-							fmt.Printf("tag.TagName: %s ", tag.TagName)
-							tags = append(tags, tag.TagName)
-						}
-					}
-					fmt.Printf("logtags2: %v ", tags)
-					utils.Write2md(rows[i], tags, category)
-				}
+				// fmt.Printf("data: %v", rows)
+
+				// default output dir, default to ./output/
+				dealPosts(rows, optionitem.OutPutDir)
 	
 				fmt.Fprintf(cmd.OutOrStdout(), "OK")
 				fmt.Println("Echo: " + strings.Join(args, " "))
 				fmt.Println("Echo: " + optionitem.DBname)
+				fmt.Println("Echo: " + optionitem.OutPutDir)
 			}
 			return nil
 		},
 	}
-	z2md.PersistentFlags().StringVar(&optionitem.DBname, "DBname", "",
+	z2md.PersistentFlags().StringVar(&optionitem.DBname, "DBname", "zblog",
 		"the DBname to read posts.")
+	z2md.PersistentFlags().StringVar(&optionitem.OutPutDir, "output", "./output/",
+		"the dir to write posts to.")
 
 	return z2md
+}
+
+func dealPosts(posts []*model.ZbpPost, outputdir string)  {
+	i := len(posts)
+	for i > 0 {
+		i = i - 1
+		fmt.Printf("LogCateID: %d ", posts[i].LogCateID)
+		category := "life"
+		cate, _ := model.GetZbpCategory("cate_ID = ?", posts[i].LogCateID)
+		if (cate != nil) {
+			category = cate.CateName
+		}
+		var tags []string
+		// {46}{72}{91}{108}{110}
+		retags, _ := utils.Tags2ID(posts[i].LogTag)
+		fmt.Printf("logtags1: %v ", retags)
+		v := len(retags)
+		for v > 0 {
+			v = v - 1
+			tag, _ := model.GetZbpTag("tag_ID = ?", retags[v])
+			if (tag != nil) {
+				fmt.Printf("tag.TagName: %s ", tag.TagName)
+				tags = append(tags, tag.TagName)
+			}
+		}
+		fmt.Printf("logtags2: %v ", tags)
+		utils.Write2hugomd(posts[i], tags, category, outputdir)
+	}
 }
