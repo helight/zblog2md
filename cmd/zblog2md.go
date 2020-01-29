@@ -56,7 +56,7 @@ func zblog2mdCmd() *cobra.Command {
 			} else {
 				fmt.Printf("total: %d", total)
 				page := uint(0)
-				for ( (uint(page) * optionitem.PageSize) < total) {
+				for ( (uint(page) * optionitem.PageSize) < (total + 20)) {
 					readAndWritePosts(optionitem.PageSize, page, optionitem.OutPutDir)
 					page = page + 1
 				} 

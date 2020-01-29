@@ -20,6 +20,7 @@ import (
 	"strings"
 	"text/template"
 	"os"
+	"unicode/utf8"
 
 	"zblog2md/pkg/model"
 )
@@ -70,8 +71,8 @@ func Write2hugomd(post *model.ZbpPost, tags []string, category string, outputdir
 	posttime := time.Unix(int64(post.LogPostTime), 0)
 	fmt.Printf("LogPostTime: %d \r\n", posttime.Year())
 
-	postData.LogTitle = post.LogTitle
-	postData.LogDate = fmt.Sprintf("\"%s\"", posttime.Format(time.RFC3339))
+	postData.LogTitle = fmt.Sprintf("\"%s\"", post.LogTitle)
+	postData.LogDate = fmt.Sprintf("%s", posttime.Format(time.RFC3339))
 	postData.LogCategories = fmt.Sprintf("[\"%s\"]", category)
 	postData.LogSummary = ""
 	postData.LogContent = post.LogContent
@@ -80,11 +81,14 @@ func Write2hugomd(post *model.ZbpPost, tags []string, category string, outputdir
 	for i > 0 {
 		i = i - 1
 		logtags = logtags + "\"" + tags[i] + "\""
-		if (i > 1) {
+		if (i > 0) {
 			logtags = logtags + ","
 		}
 	}
 	logtags = logtags + "]"
+	if (utf8.RuneCountInString(logtags) < 3) {
+		logtags = postData.LogCategories 
+	}	
 	postData.LogTags = logtags
 	postData.LogKeywords = logtags
 
