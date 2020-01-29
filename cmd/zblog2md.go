@@ -43,6 +43,7 @@ func zblog2mdCmd() *cobra.Command {
 		PreRun: func(cmd *cobra.Command, args []string) {
 			var cf config.Config
 			config.Initialize(cf)
+			utils.InitFilterMap()
 			fmt.Printf("Inside rootCmd PreRun with args: %v\n", args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
