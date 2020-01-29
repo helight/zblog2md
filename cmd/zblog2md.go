@@ -24,6 +24,7 @@ import (
 
 	"zblog2md/pkg/config"
 	"zblog2md/pkg/model"
+	"zblog2md/pkg/utils"
 )
 
 type options struct {
@@ -45,18 +46,42 @@ func zblog2mdCmd() *cobra.Command {
 			fmt.Printf("Inside rootCmd PreRun with args: %v\n", args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			total, rows, err:= model.ZbpPostPagedQuery("log_ID > 0", 20, uint(1))
+			total, rows, err:= model.ZbpPostPagedQuery("log_ID > 0", 20, uint(4))
 			if err != nil {
 				fmt.Printf("err: %s", err.Error())
 			} else {
 				fmt.Printf("total: %d", total)
 				fmt.Printf("data: %v", rows)
+				i := 20
+				for i > 0 {
+					i = i - 1
+					fmt.Printf("LogCateID: %d ", rows[i].LogCateID)
+					category := "life"
+					cate, _ := model.GetZbpCategory("cate_ID = ?", rows[i].LogCateID)
+					if (cate != nil) {
+						category = cate.CateName
+					}
+					var tags []string
+					// {46}{72}{91}{108}{110}
+					retags, _ := utils.Tags2ID(rows[i].LogTag)
+					fmt.Printf("logtags1: %v ", retags)
+					v := len(retags)
+					for v > 0 {
+						v = v - 1
+						tag, _ := model.GetZbpTag("tag_ID = ?", retags[v])
+						if (tag != nil) {
+							fmt.Printf("tag.TagName: %s ", tag.TagName)
+							tags = append(tags, tag.TagName)
+						}
+					}
+					fmt.Printf("logtags2: %v ", tags)
+					utils.Write2md(rows[i], tags, category)
+				}
 	
 				fmt.Fprintf(cmd.OutOrStdout(), "OK")
 				fmt.Println("Echo: " + strings.Join(args, " "))
 				fmt.Println("Echo: " + optionitem.DBname)
 			}
-			
 			return nil
 		},
 	}
