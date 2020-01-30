@@ -92,15 +92,17 @@ func Write2hugomd(post *model.ZbpPost, tags []string, category string, outputdir
 	postData.LogTags = logtags
 	postData.LogKeywords = logtags
 
-	// create output dir ./output/2009/
 	filepath := fmt.Sprintf("%s/%d/", outputdir, posttime.Year())
-	CreateDir(filepath)
 	filename := fmt.Sprintf("%s/%d.md", filepath, post.LogID)
 	// check if there is imgs upload in this post
 	if (strings.Contains(postData.LogContent, "zb_users/upload")) {
-		filename = fmt.Sprintf("%s/%d-imgs.md", filepath, post.LogID)
+		filepath := fmt.Sprintf("%s/%d/%d/", outputdir, posttime.Year(), post.LogID)
+		filename = fmt.Sprintf("%s/%d.md", filepath, post.LogID)
+		imgspath := fmt.Sprintf("%s/%d/%d/imgs", outputdir, posttime.Year(), post.LogID)
+		CreateDir(imgspath)
 	}
-
+	// create output dir ./output/2009/
+	CreateDir(filepath)
 	// fill the template and write to file
 	tmpl, err := template.ParseFiles("data/hugo-md.tpl")
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0755)
