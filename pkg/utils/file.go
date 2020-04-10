@@ -16,10 +16,10 @@ package utils
 
 import (
 	"fmt"
-	"time"
+	"os"
 	"strings"
 	"text/template"
-	"os"
+	"time"
 	"unicode/utf8"
 
 	"zblog2md/pkg/model"
@@ -41,37 +41,39 @@ keywords = ["life"]
 */
 
 type hugoPostTpl struct {
-	LogTitle 		string
-	LogDate   		string
-	LogTags    		string
-	LogCategories   string
-	LogSummary    	string
-	LogKeywords    	string
-	LogContent    	string
- }
+	LogTitle      string
+	AuthorID      int
+	LogDate       string
+	LogTags       string
+	LogCategories string
+	LogSummary    string
+	LogKeywords   string
+	LogContent    string
+}
 
 // CheckErr check
- func CheckErr(err error) {
+func CheckErr(err error) {
 	if err != nil {
-	   panic(err)
+		panic(err)
 	}
- }
+}
 
 // Write2md post to file
-func Write2md(post *model.ZbpPost, tags []string, category string)  {
+func Write2md(post *model.ZbpPost, tags []string, category string) {
 	posttime := time.Unix(int64(post.LogPostTime), 0)
 	fmt.Printf("LogPostTime: %d \r\n", posttime.Year())
 }
 
 // Write2hugomd post to hugo markdown file
-func Write2hugomd(post *model.ZbpPost, tags []string, category string, outputdir string)  { 
+func Write2hugomd(post *model.ZbpPost, tags []string, category string, outputdir string) {
 	// file data
-	postData := hugoPostTpl{"wool", "wool", "wool", "wool", "wool", "wool", "wool"}
+	postData := hugoPostTpl{"wool", 1, "wool", "wool", "wool", "wool", "wool", "wool"}
 
 	posttime := time.Unix(int64(post.LogPostTime), 0)
 	fmt.Printf("LogPostTime: %d \r\n", posttime.Year())
 
 	postData.LogTitle = fmt.Sprintf("\"%s\"", post.LogTitle)
+	postData.AuthorID = fmt.Sprintf("\"%d\"", post.LogAuthorID)
 	postData.LogDate = fmt.Sprintf("%s", posttime.Format(time.RFC3339))
 	postData.LogCategories = fmt.Sprintf("[\"%s\"]", category)
 	postData.LogSummary = ""
@@ -81,23 +83,23 @@ func Write2hugomd(post *model.ZbpPost, tags []string, category string, outputdir
 	for i > 0 {
 		i = i - 1
 		logtags = logtags + "\"" + tags[i] + "\""
-		if (i > 0) {
+		if i > 0 {
 			logtags = logtags + ","
 		}
 	}
 	logtags = logtags + "]"
-	if (utf8.RuneCountInString(logtags) < 3) {
-		logtags = postData.LogCategories 
-	}	
+	if utf8.RuneCountInString(logtags) < 3 {
+		logtags = postData.LogCategories
+	}
 	postData.LogTags = logtags
 	postData.LogKeywords = logtags
 
-	filepath := fmt.Sprintf("%s/%d/", outputdir, posttime.Year())
-	filename := fmt.Sprintf("%s/%d.md", filepath, post.LogID)
+	filepath := fmt.Sprintf("%s/%d/%d/", outputdir, posttime.Year(), post.LogID)
+	filename := fmt.Sprintf("%s/%d/%d.md", filepath, post.LogID, post.LogID)
 	// check if there is imgs upload in this post
-	if (strings.Contains(postData.LogContent, "zb_users/upload")) {
-		filepath := fmt.Sprintf("%s/%d/%d/", outputdir, posttime.Year(), post.LogID)
-		filename = fmt.Sprintf("%s/%d.md", filepath, post.LogID)
+	if strings.Contains(postData.LogContent, "zb_users/upload") {
+		// filepath := fmt.Sprintf("%s/%d/%d/", outputdir, posttime.Year(), post.LogID)
+		//filename = fmt.Sprintf("%s/%d.md", filepath, post.LogID)
 		imgspath := fmt.Sprintf("%s/%d/%d/imgs", outputdir, posttime.Year(), post.LogID)
 		CreateDir(imgspath)
 	}
@@ -122,8 +124,8 @@ func Tags2ID(tags string) ([]string, error) {
 	fmt.Printf("len tags: %d \r\n", v)
 	for v > 0 {
 		v = v - 1
-		
-		if(len(t[v]) > 0) {
+
+		if len(t[v]) > 0 {
 			fmt.Printf("len tags xxx: %s \r\n", t[v])
 			results = append(results, t[v])
 		}
